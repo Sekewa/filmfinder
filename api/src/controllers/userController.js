@@ -2,18 +2,14 @@
 
 const userService = require('../services/userService');
 
-// Middleware de simulation d'authentification
 const mockAuth = (req, res, next) => {
-    // En production, cette logique récupère l'ID utilisateur à partir du token JWT
-    req.userId = 1; // Simuler que l'utilisateur 1 est authentifié
+    req.userId = 1;
     next();
 };
 
 const userController = {
-    // POST /api/v1/users (Inscription)
     create: (req, res) => {
         const newUser = userService.create(req.body);
-
         if (newUser) {
             res.status(201).json({ message: 'Inscription réussie.', user: newUser });
         } else {
@@ -21,10 +17,8 @@ const userController = {
         }
     },
     
-    // GET /api/v1/users/me (Profil)
     getMe: [mockAuth, (req, res) => {
-        const user = userService.getAuthenticatedUser(req.userId); 
-
+        const user = userService.getAuthenticatedUser(req.userId);
         if (user) {
             const { password, ...profile } = user;
             res.status(200).json(profile);
@@ -33,10 +27,8 @@ const userController = {
         }
     }],
     
-    // PATCH /api/v1/users/me (Mise à jour partielle)
     patchMe: [mockAuth, (req, res) => {
         const updatedUser = userService.updateMe(req.userId, req.body);
-
         if (updatedUser) {
             const { password, ...profile } = updatedUser;
             res.status(200).json({ message: 'Profil mis à jour.', user: profile });
@@ -45,25 +37,21 @@ const userController = {
         }
     }],
 
-    // PUT /api/v1/users/me/history/films/{film_id}
     addFilmToHistory: [mockAuth, (req, res) => {
         const filmId = parseInt(req.params.film_id);
-
         if (userService.addFilmToHistory(req.userId, filmId)) {
             res.status(200).send(`Film ${filmId} ajouté à l'historique.`);
         } else {
-            res.status(400).send('Action impossible (film ou utilisateur non trouvé, ou déjà dans l\'historique).');
+            res.status(400).send('Action impossible.');
         }
     }],
 
-    // DELETE /api/v1/users/me/history/films/{film_id}
     removeFilmFromHistory: [mockAuth, (req, res) => {
         const filmId = parseInt(req.params.film_id);
-
         if (userService.removeFilmFromHistory(req.userId, filmId)) {
             res.status(200).send(`Film ${filmId} retiré de l'historique.`);
         } else {
-            res.status(400).send('Action impossible (film ou utilisateur non trouvé, ou pas dans l\'historique).');
+            res.status(400).send('Action impossible.');
         }
     }]
 };

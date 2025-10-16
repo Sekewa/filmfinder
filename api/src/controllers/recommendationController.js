@@ -9,14 +9,45 @@ const mockAuth = (req, res, next) => {
 };
 
 const recommendationController = {
-    // GET /api/v1/recommendations/films
-    getFilms: [mockAuth, (req, res) => {
-        const limit = parseInt(req.query.limit) || 5; 
-        const userId = req.userId;
-        
-        const recommendations = recommendationService.getFilmRecommendations(userId, limit);
+    getRelatedTo: [mockAuth, async (req, res) => {
+        try {
+            const filmId = parseInt(req.params.film_id);
+            const recommendations = await recommendationService.getRelatedTo(filmId, req.userId);
+            res.status(200).json(recommendations);
+        } catch (error) {
+            res.status(500).send('Erreur serveur.');
+        }
+    }],
 
-        res.status(200).json(recommendations);
+    getHiddenGems: [mockAuth, async (req, res) => {
+        try {
+            const recommendations = await recommendationService.getHiddenGems(req.userId);
+            res.status(200).json(recommendations);
+        } catch (error) {
+            res.status(500).send('Erreur serveur.');
+        }
+    }],
+
+    getByMood: [mockAuth, async (req, res) => {
+        try {
+            const { keywords } = req.query;
+            if (!keywords) {
+                return res.status(400).send('Le paramètre "keywords" est requis.');
+            }
+            const recommendations = await recommendationService.getByMood(keywords, req.userId);
+            res.status(200).json(recommendations);
+        } catch (error) {
+            res.status(500).send('Erreur serveur.');
+        }
+    }],
+
+    getNextDirectorToWatch: [mockAuth, async (req, res) => {
+        try {
+            const recommendations = await recommendationService.getNextDirectorToWatch(req.userId);
+            res.status(200).json(recommendations);
+        } catch (error) {
+            res.status(500).send('Erreur serveur.');
+        }
     }]
 };
 

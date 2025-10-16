@@ -21,3 +21,20 @@ services:
       - NODE_ENV=development
     depends_on:
       - neo4j
+
+  api:
+    build: ./api
+    container_name: api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEO4J_HOST=neo4j
+      - NEO4J_USER=neo4j
+      - NEO4J_PASS=test1234
+    volumes:
+      - ./api:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - neo4j
+    restart: unless-stopped

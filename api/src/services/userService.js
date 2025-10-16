@@ -8,14 +8,14 @@ let USERS = [
 let nextId = 3;
 
 class UserService {
-    // Simule la récupération de l'utilisateur authentifié (le premier pour l'exemple)
+    // Simule la récupération de l'utilisateur authentifié
     getAuthenticatedUser(userId) {
-        return USERS.find(u => u.id === userId); 
+        return USERS.find(u => u.id === userId);
     }
 
     create(data) {
         if (!data.email || !data.password) {
-            return null; // Erreur de validation
+            return null;
         }
         const newUser = {
             id: nextId++,
@@ -24,7 +24,6 @@ class UserService {
             history: []
         };
         USERS.push(newUser);
-        // Retourne l'objet utilisateur sans le mot de passe (sécurité)
         const { password, ...userWithoutPassword } = newUser;
         return userWithoutPassword;
     }
