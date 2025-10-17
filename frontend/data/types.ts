@@ -1,3 +1,23 @@
+export interface AnalysisMetrics {
+  popularity?: number;
+  rating?: number;
+  voteCount?: number;
+  trendScore?: number;
+  discoveryScore?: number;
+}
+
+export interface MovieAnalysis {
+  type: 'trending' | 'hidden_gem' | 'genre_discovery' | 'personalized';
+  metrics: AnalysisMetrics & { matchScore?: number };
+  genres?: string[];
+  newGenres?: string[];
+  seenGenres?: string[];
+  sharedGenres?: string[];
+  favoriteGenres?: string[];
+  year?: number;
+  reason: string;
+}
+
 export interface Movie {
   id: string;
   title: string;
@@ -12,6 +32,8 @@ export interface Movie {
   country: string;
   actors: Actor[];
   reason?: string;
+  score?: number; // Score de recommandation (0-1)
+  analysis?: MovieAnalysis; // Analyse détaillée de la recommandation
 }
 
 export interface Actor {

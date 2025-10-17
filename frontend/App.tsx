@@ -1,120 +1,60 @@
 import React from 'react';
 import { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Navigation } from "./components/Navigation";
 import { Home } from "./pages/Home";
 import { MovieDetails } from "./pages/MovieDetails";
 import { Profile } from "./pages/Profile";
-
 import { Recommendations } from "./pages/Recommendations";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { UserData } from "./data/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMe, addFilmToHistory, removeFilmFromHistory } from "./services/apiService";
-
-type Page = "recommendations" | "search" | "movie" | "profile";
+import { getMe } from "./services/apiService";
+import { useAuth } from "./contexts/AuthContext";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>("recommendations");
-  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
-    
-    const fetchUserData = async () => {
-      try {
-        const user = await getMe();
-        setUserData(user);
-      } catch (error) {
-        console.error('Failed to fetch user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserData();
   }, []);
 
-  const handlePageChange = (page: string) => {
-    setCurrentPage(page as Page);
-    if (page !== "movie") {
-      setSelectedMovieId(null);
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      const fetchUserData = async () => {
+        try {
+          const user = await getMe();
+          setUserData(user);
+        } catch (error) {
+          console.error('Failed to fetch user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchUserData();
+    } else if (!authLoading) {
+      setLoading(false);
     }
-  };
+  }, [isAuthenticated, authLoading]);
 
   const handleMovieSelect = (movieId: string) => {
-    setSelectedMovieId(movieId);
-    setCurrentPage("movie");
+    navigate(`/movie/${movieId}`);
   };
 
-  const handleBackToHome = () => {
-    setCurrentPage("recommendations");
-    setSelectedMovieId(null);
-  };
-  
   const handleUserDataChange = (newUserData: UserData) => {
-    // ici, vous pourriez aussi appeler l'API pour persister les changements
     setUserData(newUserData);
   };
 
-  const renderCurrentPage = () => {
-    if (!userData) {
-      return null;
-    }
-    
-    switch (currentPage) {
-      case "recommendations":
-        return (
-          <Recommendations
-            userData={userData}
-            onUserDataChange={handleUserDataChange}
-            onMovieSelect={handleMovieSelect}
-          />
-        );
-      case "search":
-        return (
-          <Home
-            onMovieSelect={handleMovieSelect}
-            userData={userData}
-            onUserDataChange={handleUserDataChange}
-          />
-        );
-      case "movie":
-        return selectedMovieId ? (
-          <MovieDetails
-            movieId={selectedMovieId}
-            onBack={handleBackToHome}
-            userData={userData}
-            onUserDataChange={handleUserDataChange}
-            onMovieSelect={handleMovieSelect}
-          />
-        ) : (
-          <Recommendations
-            userData={userData}
-            onUserDataChange={handleUserDataChange}
-            onMovieSelect={handleMovieSelect}
-          />
-        );
-      case "profile":
-        return (
-          <Profile
-            userData={userData}
-            onUserDataChange={handleUserDataChange}
-            onMovieSelect={handleMovieSelect}
-          />
-        );
-      default:
-        return (
-          <Recommendations
-            userData={userData}
-            onUserDataChange={handleUserDataChange}
-            onMovieSelect={handleMovieSelect}
-          />
-        );
-    }
-  };
+  const isMovieDetailsPage = location.pathname.startsWith('/movie/');
 
-  if (loading) {
+  if (authLoading || (loading && isAuthenticated)) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
@@ -127,24 +67,57 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {currentPage !== "movie" && (
-        <Navigation 
-          currentPage={currentPage} 
-          onPageChange={handlePageChange} 
-        />
+      {isAuthenticated && !isMovieDetailsPage && (
+        <Navigation />
       )}
-      
+
       <AnimatePresence mode="wait">
-        <motion.main
-          key={currentPage + (selectedMovieId || "")}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-          className="w-full"
-        >
-          {renderCurrentPage()}
-        </motion.main>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Recommendations
+                userData={userData!}
+                onUserDataChange={handleUserDataChange}
+                onMovieSelect={handleMovieSelect}
+              />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/search" element={
+            <ProtectedRoute>
+              <Home
+                onMovieSelect={handleMovieSelect}
+                userData={userData!}
+                onUserDataChange={handleUserDataChange}
+              />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/movie/:id" element={
+            <ProtectedRoute>
+              <MovieDetails
+                userData={userData!}
+                onUserDataChange={handleUserDataChange}
+                onMovieSelect={handleMovieSelect}
+              />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile
+                userData={userData!}
+                onUserDataChange={handleUserDataChange}
+                onMovieSelect={handleMovieSelect}
+              />
+            </ProtectedRoute>
+          } />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </AnimatePresence>
     </div>
   );

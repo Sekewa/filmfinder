@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { SearchBar } from "../components/SearchBar";
 import { FilterSidebar } from "../components/FilterSidebar";
 import { MovieCard } from "../components/MovieCard";
-import { getFilms } from '../services/apiService';
+import { getFilms, addFilmToFavorites, removeFilmFromFavorites, addFilmToWatchlist, removeFilmFromWatchlist } from '../services/apiService';
 import { Movie, UserData } from '../data/types';
 
 interface HomeProps {
@@ -74,26 +74,44 @@ export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
     setFilteredMovies(filtered);
   }, [searchQuery, filters, allMovies]);
 
-  const handleFavoriteToggle = (movieId: string) => {
-    const newFavorites = userData.favorites.includes(movieId)
-      ? userData.favorites.filter(id => id !== movieId)
-      : [...userData.favorites, movieId];
-    
-    onUserDataChange({
-      ...userData,
-      favorites: newFavorites
-    });
+  const handleFavoriteToggle = async (movieId: string) => {
+    try {
+      if (userData.favorites.includes(movieId)) {
+        await removeFilmFromFavorites(movieId);
+        onUserDataChange({
+          ...userData,
+          favorites: userData.favorites.filter(id => id !== movieId)
+        });
+      } else {
+        await addFilmToFavorites(movieId);
+        onUserDataChange({
+          ...userData,
+          favorites: [...userData.favorites, movieId]
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des favoris:', error);
+    }
   };
 
-  const handleWatchlistToggle = (movieId: string) => {
-    const newWatchlist = userData.watchlist.includes(movieId)
-      ? userData.watchlist.filter(id => id !== movieId)
-      : [...userData.watchlist, movieId];
-    
-    onUserDataChange({
-      ...userData,
-      watchlist: newWatchlist
-    });
+  const handleWatchlistToggle = async (movieId: string) => {
+    try {
+      if (userData.watchlist.includes(movieId)) {
+        await removeFilmFromWatchlist(movieId);
+        onUserDataChange({
+          ...userData,
+          watchlist: userData.watchlist.filter(id => id !== movieId)
+        });
+      } else {
+        await addFilmToWatchlist(movieId);
+        onUserDataChange({
+          ...userData,
+          watchlist: [...userData.watchlist, movieId]
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la watchlist:', error);
+    }
   };
 
   return (

@@ -2,11 +2,12 @@
 set -e
 
 # --- Configuration et Variables ---
+# Utilise 'localhost' car ce script s'exécute dans le conteneur Neo4j
 NEO4J_HOST="localhost"
 NEO4J_PORT="7687"
 NEO4J_USER="neo4j"
 # Récupère le mot de passe depuis la variable d'environnement NEO4J_AUTH
-NEO4J_PASS="${NEO4J_AUTH##*/}" 
+NEO4J_PASS="${NEO4J_AUTH##*/}"
 IMPORT_DIR="/data"
 MOVIES_FILE="TMDB_movie_dataset_v11.csv" # Mettez ici le nom exact de votre fichier CSV
 
@@ -31,6 +32,8 @@ CREATE CONSTRAINT KeywordNameUnique IF NOT EXISTS FOR (k:Keyword) REQUIRE k.name
 CREATE CONSTRAINT CompanyNameUnique IF NOT EXISTS FOR (c:Company) REQUIRE c.name IS UNIQUE;
 CREATE CONSTRAINT CountryNameUnique IF NOT EXISTS FOR (co:Country) REQUIRE co.name IS UNIQUE;
 CREATE CONSTRAINT LanguageNameUnique IF NOT EXISTS FOR (l:Language) REQUIRE l.name IS UNIQUE;
+CREATE CONSTRAINT user_email_unique IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE;
+CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE;
 EOF
 )
 cypher-shell -u $NEO4J_USER -p $NEO4J_PASS "$CONSTRAINTS"

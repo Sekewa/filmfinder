@@ -1,21 +1,26 @@
 import React from 'react';
-import { Search, User, Film } from "lucide-react";
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Search, User, Film, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from '../contexts/AuthContext';
 
-interface NavigationProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
-}
+export function Navigation() {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
 
-export function Navigation({ currentPage, onPageChange }: NavigationProps) {
   const navItems = [
-    { id: "recommendations", label: "Recommandations", icon: Film },
-    { id: "search", label: "Recherche", icon: Search },
-    { id: "profile", label: "Profil", icon: User },
+    { to: "/", label: "Recommandations", icon: Film },
+    { to: "/search", label: "Recherche", icon: Search },
+    { to: "/profile", label: "Profil", icon: User },
   ];
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-sm"
@@ -23,9 +28,9 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <motion.div 
+          <motion.div
             className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => onPageChange("recommendations")}
+            onClick={() => navigate('/')}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -34,28 +39,52 @@ export function Navigation({ currentPage, onPageChange }: NavigationProps) {
           </motion.div>
 
           {/* Navigation Items */}
-          <div className="flex space-x-8">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPage === item.id;
-              
-              return (
-                <motion.button
-                  key={item.id}
-                  onClick={() => onPageChange(item.id)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-colors ${
-                    isActive 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden md:block">{item.label}</span>
-                </motion.button>
-              );
-            })}
+          <div className="flex items-center space-x-4">
+            <div className="flex space-x-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/'}
+                  >
+                    {({ isActive }) => (
+                      <motion.div
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-colors ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="hidden md:block">{item.label}</span>
+                      </motion.div>
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
+
+            {/* User info and logout */}
+            <div className="flex items-center space-x-3 border-l border-border pl-4">
+              <span className="text-sm text-muted-foreground hidden md:block">
+                {user?.name}
+              </span>
+              <motion.button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-3 py-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Déconnexion"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:block text-sm">Déconnexion</span>
+              </motion.button>
+            </div>
           </div>
         </div>
       </div>

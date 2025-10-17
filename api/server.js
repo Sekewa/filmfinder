@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors'); // Importation du package cors
 
 // Importation des routeurs
-const userRoutes = require('./src/routes/userRoutes'); 
+const authRoutes = require('./src/routes/authRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 const filmRoutes = require('./src/routes/filmRoutes');
 const recommendationRoutes = require('./src/routes/recommendationRoutes');
 
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 // 2. Montage des routes spécifiques (sous le préfixe /api/v1)
 const API_V1 = '/api/v1';
 
+app.use(`${API_V1}/auth`, authRoutes);
 app.use(`${API_V1}/users`, userRoutes);
 app.use(`${API_V1}/films`, filmRoutes);
 app.use(`${API_V1}/recommendations`, recommendationRoutes);
@@ -35,7 +37,8 @@ app.use(`${API_V1}/recommendations`, recommendationRoutes);
 // 3. Démarrage du Serveur
 app.listen(port, () => {
     console.log(`🚀 API REST en cours d'exécution sur http://localhost:${port}`);
-    console.log(`Endpoints montés sur: 
+    console.log(`Endpoints montés sur:
+    - ${API_V1}/auth
     - ${API_V1}/users
     - ${API_V1}/films
     - ${API_V1}/recommendations`);

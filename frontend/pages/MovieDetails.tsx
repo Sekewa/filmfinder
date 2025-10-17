@@ -1,5 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Heart, Plus, Star, Clock, Calendar, MapPin, User, Brain } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -8,33 +9,33 @@ import { motion } from "framer-motion";
 import { MovieCard } from "../components/MovieCard";
 import { ActorCard } from "../components/ActorCard";
 import { Movie, UserData } from '../data/types';
-import { getFilmById, getRelatedRecommendations } from '../services/apiService';
+import { getFilmById, getRelatedRecommendations, addFilmToFavorites, removeFilmFromFavorites, addFilmToWatchlist, removeFilmFromWatchlist } from '../services/apiService';
 
 interface MovieDetailsProps {
-  movieId: string;
-  onBack: () => void;
   userData: UserData;
   onUserDataChange: (data: UserData) => void;
   onMovieSelect: (movieId: string) => void;
 }
 
-export function MovieDetails({ 
-  movieId, 
-  onBack, 
-  userData, 
+export function MovieDetails({
+  userData,
   onUserDataChange,
   onMovieSelect
 }: MovieDetailsProps) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
 
   useEffect(() => {
+    if (!id) return;
+
     const fetchMovieData = async () => {
       try {
         const [movieData, recommendations] = await Promise.all([
-          getFilmById(movieId),
-          getRelatedRecommendations(movieId)
+          getFilmById(id),
+          getRelatedRecommendations(id)
         ]);
         setMovie(movieData);
         setSimilarMovies(recommendations);
@@ -43,7 +44,7 @@ export function MovieDetails({
       }
     };
     fetchMovieData();
-  }, [movieId]);
+  }, [id]);
 
   if (!movie) {
     return (
@@ -58,26 +59,44 @@ export function MovieDetails({
   const isFavorite = userData.favorites.includes(movie.id);
   const isInWatchlist = userData.watchlist.includes(movie.id);
 
-  const handleFavoriteToggle = () => {
-    const newFavorites = isFavorite
-      ? userData.favorites.filter(id => id !== movie.id)
-      : [...userData.favorites, movie.id];
-    
-    onUserDataChange({
-      ...userData,
-      favorites: newFavorites
-    });
+  const handleFavoriteToggle = async () => {
+    try {
+      if (isFavorite) {
+        await removeFilmFromFavorites(movie.id);
+        onUserDataChange({
+          ...userData,
+          favorites: userData.favorites.filter(id => id !== movie.id)
+        });
+      } else {
+        await addFilmToFavorites(movie.id);
+        onUserDataChange({
+          ...userData,
+          favorites: [...userData.favorites, movie.id]
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des favoris:', error);
+    }
   };
 
-  const handleWatchlistToggle = () => {
-    const newWatchlist = isInWatchlist
-      ? userData.watchlist.filter(id => id !== movie.id)
-      : [...userData.watchlist, movie.id];
-    
-    onUserDataChange({
-      ...userData,
-      watchlist: newWatchlist
-    });
+  const handleWatchlistToggle = async () => {
+    try {
+      if (isInWatchlist) {
+        await removeFilmFromWatchlist(movie.id);
+        onUserDataChange({
+          ...userData,
+          watchlist: userData.watchlist.filter(id => id !== movie.id)
+        });
+      } else {
+        await addFilmToWatchlist(movie.id);
+        onUserDataChange({
+          ...userData,
+          watchlist: [...userData.watchlist, movie.id]
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la watchlist:', error);
+    }
   };
 
   return (
@@ -101,7 +120,7 @@ export function MovieDetails({
         >
           <Button
             variant="secondary"
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="rounded-full bg-black/50 text-white hover:bg-black/70 border-none backdrop-blur-sm"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -259,17 +278,43 @@ export function MovieDetails({
                       movie={similarMovie}
                       isFavorite={userData.favorites.includes(similarMovie.id)}
                       isInWatchlist={userData.watchlist.includes(similarMovie.id)}
-                      onFavoriteToggle={(id) => {
-                        const newFavorites = userData.favorites.includes(id)
-                          ? userData.favorites.filter(fId => fId !== id)
-                          : [...userData.favorites, id];
-                        onUserDataChange({ ...userData, favorites: newFavorites });
+                      onFavoriteToggle={async (id) => {
+                        try {
+                          if (userData.favorites.includes(id)) {
+                            await removeFilmFromFavorites(id);
+                            onUserDataChange({
+                              ...userData,
+                              favorites: userData.favorites.filter(fId => fId !== id)
+                            });
+                          } else {
+                            await addFilmToFavorites(id);
+                            onUserDataChange({
+                              ...userData,
+                              favorites: [...userData.favorites, id]
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Erreur lors de la mise à jour des favoris:', error);
+                        }
                       }}
-                      onWatchlistToggle={(id) => {
-                        const newWatchlist = userData.watchlist.includes(id)
-                          ? userData.watchlist.filter(wId => wId !== id)
-                          : [...userData.watchlist, id];
-                        onUserDataChange({ ...userData, watchlist: newWatchlist });
+                      onWatchlistToggle={async (id) => {
+                        try {
+                          if (userData.watchlist.includes(id)) {
+                            await removeFilmFromWatchlist(id);
+                            onUserDataChange({
+                              ...userData,
+                              watchlist: userData.watchlist.filter(wId => wId !== id)
+                            });
+                          } else {
+                            await addFilmToWatchlist(id);
+                            onUserDataChange({
+                              ...userData,
+                              watchlist: [...userData.watchlist, id]
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Erreur lors de la mise à jour de la watchlist:', error);
+                        }
                       }}
                       onClick={onMovieSelect}
                     />
