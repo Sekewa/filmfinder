@@ -4,17 +4,19 @@ import { motion } from "framer-motion";
 import { SearchBar } from "../components/SearchBar";
 import { FilterSidebar } from "../components/FilterSidebar";
 import { MovieCard } from "../components/MovieCard";
-import { mockMovies, mockUserData } from "../data/mockData";
+import { getFilms } from '../services/apiService';
+import { Movie, UserData } from '../data/types';
 
 interface HomeProps {
   onMovieSelect: (movieId: string) => void;
-  userData: typeof mockUserData;
-  onUserDataChange: (data: typeof mockUserData) => void;
+  userData: UserData;
+  onUserDataChange: (data: UserData) => void;
 }
 
 export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredMovies, setFilteredMovies] = useState(mockMovies);
+  const [allMovies, setAllMovies] = useState<Movie[]>([]);
+  const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
     genres: [] as string[],
@@ -25,9 +27,21 @@ export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
   });
 
   useEffect(() => {
-    let filtered = mockMovies;
+    const fetchMovies = async () => {
+      try {
+        const movies = await getFilms();
+        setAllMovies(movies);
+        setFilteredMovies(movies);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des films :", error);
+      }
+    };
+    fetchMovies();
+  }, []);
 
-    // Apply search query
+  useEffect(() => {
+    let filtered = allMovies;
+
     if (searchQuery.trim()) {
       filtered = filtered.filter(movie =>
         movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -37,7 +51,6 @@ export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
       );
     }
 
-    // Apply filters
     if (filters.genres.length > 0) {
       filtered = filtered.filter(movie =>
         movie.genres.some(genre => filters.genres.includes(genre))
@@ -59,7 +72,7 @@ export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
     );
 
     setFilteredMovies(filtered);
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, allMovies]);
 
   const handleFavoriteToggle = (movieId: string) => {
     const newFavorites = userData.favorites.includes(movieId)
@@ -86,7 +99,6 @@ export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
         <motion.div 
           className="text-center mb-12"
           initial={{ opacity: 0, y: 30 }}
@@ -105,9 +117,7 @@ export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
           />
         </motion.div>
 
-        {/* Results Section */}
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
           <motion.div 
             className="lg:w-80 flex-shrink-0"
             initial={{ opacity: 0, x: -30 }}
@@ -122,7 +132,6 @@ export function Home({ onMovieSelect, userData, onUserDataChange }: HomeProps) {
             />
           </motion.div>
 
-          {/* Movies Grid */}
           <div className="flex-1">
             <motion.div 
               className="flex items-center justify-between mb-6"

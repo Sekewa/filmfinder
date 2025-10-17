@@ -4,9 +4,8 @@ import { ChevronDown, ChevronUp, Filter } from "lucide-react";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Slider } from "./ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { motion, AnimatePresence } from "framer-motion";
-import { genres, countries } from "../data/mockData";
+import { genres, countries } from "../data/types";
 
 interface FilterSidebarProps {
   filters: {

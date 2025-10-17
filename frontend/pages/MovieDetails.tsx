@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Heart, Plus, Star, Clock, Calendar, MapPin, User, Brain } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -7,14 +7,14 @@ import { Card, CardContent } from "../components/ui/card";
 import { motion } from "framer-motion";
 import { MovieCard } from "../components/MovieCard";
 import { ActorCard } from "../components/ActorCard";
-import { mockMovies, mockUserData, Movie } from "../data/mockData";
-import { RecommendationEngine } from "../utils/recommendationEngine";
+import { Movie, UserData } from '../data/types';
+import { getFilmById, getRelatedRecommendations } from '../services/apiService';
 
 interface MovieDetailsProps {
   movieId: string;
   onBack: () => void;
-  userData: typeof mockUserData;
-  onUserDataChange: (data: typeof mockUserData) => void;
+  userData: UserData;
+  onUserDataChange: (data: UserData) => void;
   onMovieSelect: (movieId: string) => void;
 }
 
@@ -25,16 +25,31 @@ export function MovieDetails({
   onUserDataChange,
   onMovieSelect
 }: MovieDetailsProps) {
-  const movie = mockMovies.find(m => m.id === movieId);
+  const [movie, setMovie] = useState<Movie | null>(null);
+  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
-  const engine = new RecommendationEngine();
+
+  useEffect(() => {
+    const fetchMovieData = async () => {
+      try {
+        const [movieData, recommendations] = await Promise.all([
+          getFilmById(movieId),
+          getRelatedRecommendations(movieId)
+        ]);
+        setMovie(movieData);
+        setSimilarMovies(recommendations);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des détails du film:", error);
+      }
+    };
+    fetchMovieData();
+  }, [movieId]);
 
   if (!movie) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-4">Film non trouvé</h2>
-          <Button onClick={onBack}>Retour</Button>
+          <h2 className="text-2xl font-semibold mb-4">Chargement...</h2>
         </div>
       </div>
     );
@@ -42,12 +57,6 @@ export function MovieDetails({
 
   const isFavorite = userData.favorites.includes(movie.id);
   const isInWatchlist = userData.watchlist.includes(movie.id);
-
-  // Get similar movies using recommendation engine
-  const similarMoviesRecs = engine.generateSimilarMovies(movie.id, 4);
-  const similarMovies = similarMoviesRecs.map(rec => 
-    mockMovies.find(m => m.id === rec.movieId)
-  ).filter(Boolean) as Movie[];
 
   const handleFavoriteToggle = () => {
     const newFavorites = isFavorite
@@ -73,7 +82,6 @@ export function MovieDetails({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Banner */}
       <div className="relative h-[60vh] overflow-hidden">
         <div className={`absolute inset-0 bg-muted animate-pulse ${backdropLoaded ? 'hidden' : ''}`} />
         <img
@@ -86,7 +94,6 @@ export function MovieDetails({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
         
-        {/* Back Button */}
         <motion.div 
           className="absolute top-6 left-6 z-10"
           initial={{ opacity: 0, x: -20 }}
@@ -102,11 +109,9 @@ export function MovieDetails({
           </Button>
         </motion.div>
 
-        {/* Movie Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col lg:flex-row items-start lg:items-end gap-6">
-              {/* Poster */}
               <motion.div 
                 className="w-48 h-72 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0"
                 initial={{ opacity: 0, y: 50 }}
@@ -120,7 +125,6 @@ export function MovieDetails({
                 />
               </motion.div>
 
-              {/* Info */}
               <motion.div 
                 className="flex-1 text-white"
                 initial={{ opacity: 0, y: 30 }}
@@ -191,10 +195,8 @@ export function MovieDetails({
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-12">
-          {/* Synopsis */}
           <motion.section
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -210,7 +212,6 @@ export function MovieDetails({
             </Card>
           </motion.section>
 
-          {/* Cast */}
           {movie.actors.length > 0 && (
             <motion.section
               initial={{ opacity: 0, y: 30 }}
@@ -233,7 +234,6 @@ export function MovieDetails({
             </motion.section>
           )}
 
-          {/* Similar Movies */}
           {similarMovies.length > 0 && (
             <motion.section
               initial={{ opacity: 0, y: 30 }}

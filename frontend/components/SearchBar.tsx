@@ -4,7 +4,8 @@ import { Search, X } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { mockMovies } from "../data/mockData";
+import { getFilms } from '../services/apiService';
+import { Movie } from '../data/types';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -13,12 +14,25 @@ interface SearchBarProps {
 
 export function SearchBar({ onSearch, onSuggestionSelect }: SearchBarProps) {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [allMovies, setAllMovies] = useState<Movie[]>([]);
+  const [suggestions, setSuggestions] = useState<Movie[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const movies = await getFilms();
+        setAllMovies(movies);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des films :", error);
+      }
+    };
+    fetchMovies();
+  }, []);
+
+  useEffect(() => {
     if (query.trim().length > 1) {
-      const filtered = mockMovies
+      const filtered = allMovies
         .filter(movie => 
           movie.title.toLowerCase().includes(query.toLowerCase()) ||
           movie.director.toLowerCase().includes(query.toLowerCase()) ||
@@ -32,7 +46,7 @@ export function SearchBar({ onSearch, onSuggestionSelect }: SearchBarProps) {
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [query]);
+  }, [query, allMovies]);
 
   const handleSearch = () => {
     onSearch(query);
@@ -88,7 +102,6 @@ export function SearchBar({ onSearch, onSuggestionSelect }: SearchBarProps) {
         </div>
       </motion.div>
 
-      {/* Suggestions Dropdown */}
       <AnimatePresence>
         {showSuggestions && suggestions.length > 0 && (
           <motion.div

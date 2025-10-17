@@ -6,32 +6,33 @@ import { MovieDetails } from "./pages/MovieDetails";
 import { Profile } from "./pages/Profile";
 
 import { Recommendations } from "./pages/Recommendations";
-import { mockUserData } from "./data/mockData";
+import { UserData } from "./data/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { initializeServices, defaultConfig } from "./services/serviceFactory";
+import { getMe, addFilmToHistory, removeFilmFromHistory } from "./services/apiService";
 
 type Page = "recommendations" | "search" | "movie" | "profile";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("recommendations");
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
-  const [userData, setUserData] = useState(mockUserData);
-  const [servicesInitialized, setServicesInitialized] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Initialize services and apply dark theme
   useEffect(() => {
     document.documentElement.classList.add('dark');
     
-    const initServices = async () => {
+    const fetchUserData = async () => {
       try {
-        await initializeServices(defaultConfig);
-        setServicesInitialized(true);
+        const user = await getMe();
+        setUserData(user);
       } catch (error) {
-        console.error('Failed to initialize services:', error);
+        console.error('Failed to fetch user data:', error);
+      } finally {
+        setLoading(false);
       }
     };
     
-    initServices();
+    fetchUserData();
   }, []);
 
   const handlePageChange = (page: string) => {
@@ -50,14 +51,23 @@ export default function App() {
     setCurrentPage("recommendations");
     setSelectedMovieId(null);
   };
+  
+  const handleUserDataChange = (newUserData: UserData) => {
+    // ici, vous pourriez aussi appeler l'API pour persister les changements
+    setUserData(newUserData);
+  };
 
   const renderCurrentPage = () => {
+    if (!userData) {
+      return null;
+    }
+    
     switch (currentPage) {
       case "recommendations":
         return (
           <Recommendations
             userData={userData}
-            onUserDataChange={setUserData}
+            onUserDataChange={handleUserDataChange}
             onMovieSelect={handleMovieSelect}
           />
         );
@@ -66,7 +76,7 @@ export default function App() {
           <Home
             onMovieSelect={handleMovieSelect}
             userData={userData}
-            onUserDataChange={setUserData}
+            onUserDataChange={handleUserDataChange}
           />
         );
       case "movie":
@@ -75,13 +85,13 @@ export default function App() {
             movieId={selectedMovieId}
             onBack={handleBackToHome}
             userData={userData}
-            onUserDataChange={setUserData}
+            onUserDataChange={handleUserDataChange}
             onMovieSelect={handleMovieSelect}
           />
         ) : (
           <Recommendations
             userData={userData}
-            onUserDataChange={setUserData}
+            onUserDataChange={handleUserDataChange}
             onMovieSelect={handleMovieSelect}
           />
         );
@@ -89,7 +99,7 @@ export default function App() {
         return (
           <Profile
             userData={userData}
-            onUserDataChange={setUserData}
+            onUserDataChange={handleUserDataChange}
             onMovieSelect={handleMovieSelect}
           />
         );
@@ -97,20 +107,19 @@ export default function App() {
         return (
           <Recommendations
             userData={userData}
-            onUserDataChange={setUserData}
+            onUserDataChange={handleUserDataChange}
             onMovieSelect={handleMovieSelect}
           />
         );
     }
   };
 
-  // Show loading until services are initialized
-  if (!servicesInitialized) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Initialisation de Film Finder...</p>
+          <p className="text-muted-foreground">Chargement de Film Finder...</p>
         </div>
       </div>
     );
@@ -118,7 +127,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Navigation - Only show on non-movie pages */}
       {currentPage !== "movie" && (
         <Navigation 
           currentPage={currentPage} 
@@ -126,7 +134,6 @@ export default function App() {
         />
       )}
       
-      {/* Main Content with Page Transitions */}
       <AnimatePresence mode="wait">
         <motion.main
           key={currentPage + (selectedMovieId || "")}

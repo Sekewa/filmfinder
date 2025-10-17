@@ -1,24 +1,38 @@
 import React from 'react';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, Clock, History, User } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Card, CardContent } from "../components/ui/card";
 import { motion } from "framer-motion";
 import { MovieCard } from "../components/MovieCard";
-import { mockMovies, mockUserData } from "../data/mockData";
+import { Movie, UserData } from '../data/types';
+import { getFilms } from '../services/apiService';
 
 interface ProfileProps {
-  userData: typeof mockUserData;
-  onUserDataChange: (data: typeof mockUserData) => void;
+  userData: UserData;
+  onUserDataChange: (data: UserData) => void;
   onMovieSelect: (movieId: string) => void;
 }
 
 export function Profile({ userData, onUserDataChange, onMovieSelect }: ProfileProps) {
   const [activeTab, setActiveTab] = useState("favorites");
+  const [allMovies, setAllMovies] = useState<Movie[]>([]);
 
-  const favoriteMovies = mockMovies.filter(movie => userData.favorites.includes(movie.id));
-  const watchlistMovies = mockMovies.filter(movie => userData.watchlist.includes(movie.id));
-  const historyMovies = mockMovies.filter(movie => userData.history.includes(movie.id));
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const movies = await getFilms();
+        setAllMovies(movies);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des films:", error);
+      }
+    };
+    fetchMovies();
+  }, []);
+
+  const favoriteMovies = allMovies.filter(movie => userData.favorites.includes(movie.id));
+  const watchlistMovies = allMovies.filter(movie => userData.watchlist.includes(movie.id));
+  const historyMovies = allMovies.filter(movie => userData.history.includes(movie.id));
 
   const handleFavoriteToggle = (movieId: string) => {
     const newFavorites = userData.favorites.includes(movieId)
@@ -83,7 +97,6 @@ export function Profile({ userData, onUserDataChange, onMovieSelect }: ProfilePr
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <motion.div 
           className="text-center mb-12"
           initial={{ opacity: 0, y: 30 }}
@@ -98,7 +111,6 @@ export function Profile({ userData, onUserDataChange, onMovieSelect }: ProfilePr
           </p>
         </motion.div>
 
-        {/* Stats Cards */}
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -130,7 +142,6 @@ export function Profile({ userData, onUserDataChange, onMovieSelect }: ProfilePr
           </Card>
         </motion.div>
 
-        {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

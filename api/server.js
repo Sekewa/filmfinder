@@ -1,6 +1,6 @@
-// api/server.js (MIS À JOUR)
-
 const express = require('express');
+const cors = require('cors'); // Importation du package cors
+
 // Importation des routeurs
 const userRoutes = require('./src/routes/userRoutes'); 
 const filmRoutes = require('./src/routes/filmRoutes');
@@ -8,6 +8,14 @@ const recommendationRoutes = require('./src/routes/recommendationRoutes');
 
 const app = express();
 const port = 3000;
+
+// Configuration de CORS pour autoriser spécifiquement votre frontend
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  optionsSuccessStatus: 200 // Pour les navigateurs plus anciens
+};
+
+app.use(cors(corsOptions));
 
 // Middleware : permet à Express de lire le corps des requêtes en JSON
 app.use(express.json());
